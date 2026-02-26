@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+docs/screenshots/
+docs/agent/
+docs/user/
+*.png

@@ -1,0 +1,63 @@
+scenarios:
+  - id: empty-state
+    description: Empty todo list — no items added yet
+    path: /
+    actions:
+      - type: waitForSelector
+        selector: "[data-testid='empty-state']"
+
+  - id: add-todo
+    description: Adding a new todo item
+    path: /
+    actions:
+      - type: waitForSelector
+        selector: "[data-testid='add-input']"
+      - type: fill
+        selector: "[data-testid='add-input']"
+        value: Buy groceries
+      - type: click
+        selector: "[data-testid='add-btn']"
+      - type: waitForSelector
+        selector: "[data-testid='todo-item']"
+
+  - id: multiple-todos
+    description: List with multiple todo items
+    path: /
+    actions:
+      - type: waitForSelector
+        selector: "[data-testid='add-input']"
+      - type: fill
+        selector: "[data-testid='add-input']"
+        value: Buy groceries
+      - type: click
+        selector: "[data-testid='add-btn']"
+      - type: fill
+        selector: "[data-testid='add-input']"
+        value: Walk the dog
+      - type: click
+        selector: "[data-testid='add-btn']"
+      - type: fill
+        selector: "[data-testid='add-input']"
+        value: Read a book
+      - type: click
+        selector: "[data-testid='add-btn']"
+      - type: waitForSelector
+        selector: "[data-testid='todo-item']"
+
+  - id: completed-item
+    description: Marking a todo item as completed
+    path: /
+    actions:
+      - type: waitForSelector
+        selector: "[data-testid='add-input']"
+      - type: fill
+        selector: "[data-testid='add-input']"
+        value: Finish the report
+      - type: click
+        selector: "[data-testid='add-btn']"
+      - type: waitForSelector
+        selector: "[data-testid='todo-checkbox']"
+      - type: click
+        selector: "[data-testid='todo-checkbox']"
+      - type: wait
+        ms: 300

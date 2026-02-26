@@ -1,0 +1,23 @@
+{
+  "name": "@duck/docsbot",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "docsbot": "./src/cli.ts"
+  },
+  "scripts": {
+    "generate": "bun run src/cli.ts generate",
+    "validate": "bun run src/cli.ts validate",
+    "screenshots": "bun run src/cli.ts screenshots"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "playwright": "^1.50.1",
+    "typescript": "^5.8.2",
+    "yaml": "^2.7.0"
+  }
+}
