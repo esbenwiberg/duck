@@ -7,8 +7,8 @@ const config: Config = {
   tagline: "AI-powered documentation that stays in sync with your code.",
   favicon: "img/favicon.ico",
 
-  url: "https://duck.dev",
-  baseUrl: "/",
+  url: "https://orcha-new.westeurope.cloudapp.azure.com",
+  baseUrl: "/duck/",
 
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
@@ -35,15 +35,26 @@ const config: Config = {
   ],
 
   plugins: [
+    // Local search (offline, no Algolia needed)
     [
       require.resolve("@easyops-cn/docusaurus-search-local"),
       {
         hashed: true,
         language: ["en"],
         indexBlog: false,
-        docsRouteBasePath: "/docs",
+        docsRouteBasePath: ["/docs", "/todo"],
         highlightSearchTermsOnTargetPage: true,
         explicitSearchResultPath: true,
+      },
+    ],
+    // Second docs instance: generated output for the todo app
+    [
+      "@docusaurus/plugin-content-docs",
+      {
+        id: "todo",
+        path: "../../apps/todo/docs/agent",
+        routeBasePath: "todo",
+        sidebarPath: "./sidebars-todo.ts",
       },
     ],
   ],
@@ -70,6 +81,13 @@ const config: Config = {
           label: "Docs",
         },
         {
+          type: "docSidebar",
+          sidebarId: "todoSidebar",
+          docsPluginId: "todo",
+          position: "left",
+          label: "Todo App ✦",
+        },
+        {
           href: "https://github.com/your-org/duck",
           label: "GitHub",
           position: "right",
@@ -80,11 +98,19 @@ const config: Config = {
       style: "dark",
       links: [
         {
-          title: "Docs",
+          title: "Duck Docs",
           items: [
             { label: "Getting Started", to: "/docs/getting-started/installation" },
             { label: "CLI Reference", to: "/docs/cli-reference/generate" },
             { label: "Core Concepts", to: "/docs/core-concepts/overview" },
+          ],
+        },
+        {
+          title: "Generated App Docs",
+          items: [
+            { label: "Todo App — Overview", to: "/todo" },
+            { label: "Store", to: "/todo/api/store" },
+            { label: "Types", to: "/todo/api/types" },
           ],
         },
         {

@@ -1,0 +1,11 @@
+{
+  "capturedAt": "2026-02-26T13:13:22.116Z",
+  "watchGlobs": [],
+  "hashes": {
+    "empty-state": "21cbf19b5b624f2f5a3ae77582690d15177cf91707c716b91abca75ca38608bf",
+    "add-todo": "d0a13bc82e5053ca0a301de801cd7e60208867a32fee588c05f79fb92d9e946e",
+    "multiple-todos": "7c2f2459363c0e385d0db077b7759c7f4a2b9ae066f58c8e667c20ffb1bae117",
+    "completed-item": "f92840eb81b6e950b882cc2e4475d2e5c7b8c41ac6b4df2c4b70e36378001161"
+  },
+  "lastCommit": "00fc9ffa63073729221f099afc8efbccd531911b"
+}

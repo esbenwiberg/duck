@@ -1,9 +1,9 @@
 node_modules/
 dist/
 .env
+# Legacy output dirs (superseded by apps/todo/docs/agent and apps/docs/static/screenshots)
 docs/screenshots/
 docs/agent/
 docs/user/
-*.png
 apps/docs/build/
 apps/docs/.docusaurus/

@@ -3,6 +3,10 @@ scenarios:
     description: Empty todo list — no items added yet
     path: /
     actions:
+      - type: deleteRequest
+        url: http://localhost:3002/api/todos
+      - type: wait
+        ms: 200
       - type: waitForSelector
         selector: "[data-testid='empty-state']"
 
@@ -10,6 +14,10 @@ scenarios:
     description: Adding a new todo item
     path: /
     actions:
+      - type: deleteRequest
+        url: http://localhost:3002/api/todos
+      - type: wait
+        ms: 200
       - type: waitForSelector
         selector: "[data-testid='add-input']"
       - type: fill
@@ -24,6 +32,10 @@ scenarios:
     description: List with multiple todo items
     path: /
     actions:
+      - type: deleteRequest
+        url: http://localhost:3002/api/todos
+      - type: wait
+        ms: 200
       - type: waitForSelector
         selector: "[data-testid='add-input']"
       - type: fill
@@ -48,6 +60,10 @@ scenarios:
     description: Marking a todo item as completed
     path: /
     actions:
+      - type: deleteRequest
+        url: http://localhost:3002/api/todos
+      - type: wait
+        ms: 200
       - type: waitForSelector
         selector: "[data-testid='add-input']"
       - type: fill

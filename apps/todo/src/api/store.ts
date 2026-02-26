@@ -48,6 +48,11 @@ export class TodoStore {
   delete(id: string): boolean {
     return this.todos.delete(id);
   }
+
+  /** Remove all todos. Used by the test-reset endpoint. */
+  clear(): void {
+    this.todos.clear();
+  }
 }
 
 export const store = new TodoStore();

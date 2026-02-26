@@ -44,3 +44,9 @@ todoRoutes.delete("/:id", (c) => {
   if (!deleted) return c.json({ error: "not found", ok: false }, 404);
   return c.json({ data: null, ok: true });
 });
+
+// Test-only reset endpoint — clears all todos for screenshot scenarios
+todoRoutes.delete("/", (c) => {
+  store.clear();
+  return c.json({ data: null, ok: true });
+});
