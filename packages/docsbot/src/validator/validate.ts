@@ -3,7 +3,7 @@ import { execSync } from "child_process";
 import { join } from "path";
 import type { ParsedModule, DocSnapshot, ValidationResult } from "../types.ts";
 import { reviewDocs } from "../generator/llm.ts";
-import { hashImage } from "../screenshotter/capture.ts";
+import { hashImage, loadScreenshotSnapshot } from "../screenshotter/capture.ts";
 
 // ---------------------------------------------------------------------------
 // Check 1: Docs match source (drift detection)
@@ -59,9 +59,7 @@ export function checkDocsDrift(
  * We store hashes in a sidecar JSON next to screenshots.
  */
 export function loadScreenshotHashes(screenshotsDir: string): Record<string, string> {
-  const hashFile = join(screenshotsDir, "hashes.json");
-  if (!existsSync(hashFile)) return {};
-  return JSON.parse(readFileSync(hashFile, "utf8"));
+  return loadScreenshotSnapshot(screenshotsDir).hashes;
 }
 
 export function checkScreenshots(

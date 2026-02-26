@@ -79,7 +79,35 @@ export interface ParsedModule {
  */
 export interface DocSnapshot {
   generatedAt: string;
+  lastCommit?: string;
   modules: Record<string, { contentHash: string; docPath: string }>;
+}
+
+/**
+ * Snapshot persisted alongside screenshots.
+ * Replaces the bare Record<string,string> hashes.json format.
+ */
+export interface ScreenshotSnapshot {
+  capturedAt: string;
+  lastCommit?: string;
+  watchGlobs: string[];
+  hashes: Record<string, string>;
+}
+
+/**
+ * Shape of docsbot.config.json placed in a repo root.
+ * Values here serve as defaults; CLI flags take precedence.
+ */
+export interface DocbotConfig {
+  target?: string;
+  output?: string;
+  screenshotsDir?: string;
+  userDocsDir?: string;
+  screenshots?: {
+    manifest?: string;
+    app?: string;
+    watchGlobs?: string[];
+  };
 }
 
 /**
@@ -100,7 +128,9 @@ export type ScenarioAction =
   | { type: "fill"; selector: string; value: string }
   | { type: "click"; selector: string }
   | { type: "wait"; ms: number }
-  | { type: "waitForSelector"; selector: string };
+  | { type: "waitForSelector"; selector: string }
+  /** Send a DELETE request to reset server state before the screenshot */
+  | { type: "deleteRequest"; url: string };
 
 /**
  * Result of capturing a single scenario.

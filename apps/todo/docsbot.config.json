@@ -1,0 +1,11 @@
+{
+  "target": "src",
+  "output": "docs/agent",
+  "screenshotsDir": "docs/screenshots",
+  "userDocsDir": "docs/user",
+  "screenshots": {
+    "manifest": "scenarios.yaml",
+    "app": "http://localhost:5173",
+    "watchGlobs": ["src/ui/**", "src/**/*.css"]
+  }
+}

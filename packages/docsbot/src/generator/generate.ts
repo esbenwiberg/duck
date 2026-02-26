@@ -30,11 +30,13 @@ function docPath(outputDir: string, moduleId: string): string {
  * @param modules Parsed source modules
  * @param outputDir Directory to write .md files into
  * @param force Re-generate all docs even if hashes match
+ * @param headCommit Current HEAD commit SHA — stored in snapshot for incremental runs
  */
 export async function generateAgentDocs(
   modules: ParsedModule[],
   outputDir: string,
-  force = false
+  force = false,
+  headCommit?: string
 ): Promise<{ generated: string[]; skipped: string[] }> {
   const snapshot = loadSnapshot(outputDir);
   const generated: string[] = [];
@@ -96,6 +98,7 @@ export async function generateAgentDocs(
   }
 
   snapshot.generatedAt = new Date().toISOString();
+  if (headCommit) snapshot.lastCommit = headCommit;
   saveSnapshot(outputDir, snapshot);
 
   return { generated, skipped };
