@@ -1,4 +1,4 @@
-import type { ParsedModule, ParsedFunction, ParsedType, ParsedClass } from "../types.ts";
+import type { ParsedModule, ParsedFunction, ParsedType, ParsedClass, ParsedConstant } from "../types.ts";
 
 // ---------------------------------------------------------------------------
 // Prompt builders — convert parsed metadata into LLM prompts
@@ -9,11 +9,17 @@ function functionPrompt(fn: ParsedFunction): string {
     .map((p) => `  - \`${p.name}${p.optional ? "?" : ""}: ${p.type}\``)
     .join("\n");
 
+  const exportKind = fn.defaultExport
+    ? "default export"
+    : fn.exported
+    ? "named export"
+    : "not exported";
+
   return `
 ### \`${fn.name}\`
 
 **Kind:** ${fn.kind}${fn.async ? " (async)" : ""}
-**Exported:** ${fn.exported}
+**Export:** ${exportKind} (import as: ${fn.defaultExport ? `\`import ${fn.name} from '...'\`` : `\`import { ${fn.name} } from '...'\``})
 ${fn.description ? `**Description:** ${fn.description}` : ""}
 **Parameters:**
 ${params || "  (none)"}
@@ -37,11 +43,17 @@ ${members || "  (none)"}
 }
 
 function classPrompt(c: ParsedClass): string {
+  const methodDetails = c.methods.map((m) => functionPrompt(m)).join("\n\n");
+  const exportKind = c.exported ? "named export (import as `import { " + c.name + " } from '...'`)" : "not exported";
   return `
 ### \`${c.name}\` (class)
 
+**Export:** ${exportKind}
 ${c.description ?? ""}
-**Methods:** ${c.methods.map((m) => `\`${m.name}\``).join(", ")}
+
+#### Methods
+
+${methodDetails || "  (none)"}
 `.trim();
 }
 
@@ -51,7 +63,8 @@ ${c.description ?? ""}
 export function buildModulePrompt(module: ParsedModule): string {
   const sections: string[] = [
     `Generate API reference documentation for the module \`${module.moduleId}\`.`,
-    `Use the structured metadata below to write accurate markdown documentation.`,
+    `Use ONLY the structured metadata below — do not infer or invent signatures, parameters, or return types.`,
+    `Every parameter name, type, and return type MUST exactly match what is listed in the metadata.`,
     `Include a short module overview, then document each export.`,
     ``,
   ];
@@ -69,6 +82,13 @@ export function buildModulePrompt(module: ParsedModule): string {
   if (module.classes.length) {
     sections.push("## Classes");
     module.classes.forEach((c) => sections.push(classPrompt(c)));
+  }
+
+  if (module.constants.length) {
+    sections.push("## Exported Constants");
+    module.constants.forEach((con) => {
+      sections.push(`### \`${con.name}\`\n\n**Type:** \`${con.type}\`${con.description ? `\n\n${con.description}` : ""}`);
+    });
   }
 
   return sections.join("\n\n");

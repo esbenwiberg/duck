@@ -71,6 +71,9 @@ function parseFunction(
   const isExported =
     ts.isFunctionDeclaration(node) &&
     node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+  const isDefault =
+    ts.isFunctionDeclaration(node) &&
+    !!node.modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword);
 
   const kind = ts.isFunctionDeclaration(node)
     ? "function"
@@ -83,14 +86,23 @@ function parseFunction(
   const end = src.getLineAndCharacterOfPosition(node.getEnd());
 
   const sig = checker.getSignatureFromDeclaration(node);
-  const returnType = sig
+  let returnType = sig
     ? checker.typeToString(checker.getReturnTypeOfSignature(sig))
     : "unknown";
+
+  // In .tsx files, React components return Element which resolves to JSX.Element
+  if (
+    node.getSourceFile().fileName.endsWith(".tsx") &&
+    (returnType === "Element" || returnType === "ReactElement")
+  ) {
+    returnType = "JSX.Element";
+  }
 
   return {
     kind,
     name,
     exported: !!isExported,
+    defaultExport: !!isDefault,
     async: !!node.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword),
     params: parseParams(checker, node.parameters),
     returnType,
@@ -128,6 +140,7 @@ export function parseFile(filePath: string, rootDir: string): ParsedModule {
   const functions: ParsedFunction[] = [];
   const types: ParsedType[] = [];
   const classes: ParsedClass[] = [];
+  const constants: import("../types.ts").ParsedConstant[] = [];
 
   function visit(node: ts.Node) {
     // Function declarations
@@ -136,19 +149,28 @@ export function parseFile(filePath: string, rootDir: string): ParsedModule {
       if (fn) functions.push(fn);
     }
 
-    // Variable declarations that are arrow functions
+    // Variable declarations: arrow functions OR exported constants
     if (ts.isVariableStatement(node)) {
       const exported = node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+      if (!exported) { ts.forEachChild(node, visit); return; }
+
       for (const decl of node.declarationList.declarations) {
-        if (
-          decl.initializer &&
-          ts.isArrowFunction(decl.initializer) &&
-          ts.isIdentifier(decl.name)
-        ) {
-          const fn = parseFunction(checker, decl.initializer, decl.name.getText());
-          if (fn) functions.push({ ...fn, exported: !!exported });
+        if (!ts.isIdentifier(decl.name)) continue;
+        const name = decl.name.getText();
+
+        if (decl.initializer && ts.isArrowFunction(decl.initializer)) {
+          const fn = parseFunction(checker, decl.initializer, name);
+          if (fn) functions.push({ ...fn, exported: true, defaultExport: false });
+        } else {
+          // Non-function exported const — capture type and JSDoc
+          const type = decl.type
+            ? decl.type.getText()
+            : checker.typeToString(checker.getTypeAtLocation(decl));
+          const { description } = getJsDoc(decl);
+          constants.push({ name, type, description });
         }
       }
+      return; // children already handled above
     }
 
     // Interface declarations
@@ -216,6 +238,7 @@ export function parseFile(filePath: string, rootDir: string): ParsedModule {
     functions,
     types,
     classes,
+    constants,
     contentHash: hash(content),
   };
 }

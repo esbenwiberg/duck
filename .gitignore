@@ -5,3 +5,5 @@ docs/screenshots/
 docs/agent/
 docs/user/
 *.png
+apps/docs/build/
+apps/docs/.docusaurus/

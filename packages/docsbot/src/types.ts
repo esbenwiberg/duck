@@ -15,6 +15,8 @@ export interface ParsedFunction {
   kind: "function" | "method" | "arrow";
   name: string;
   exported: boolean;
+  /** True if this is the module's default export */
+  defaultExport: boolean;
   async: boolean;
   params: ParsedParam[];
   returnType: string;
@@ -51,6 +53,13 @@ export interface ParsedClass {
 /**
  * All extracted metadata for a single source file.
  */
+/** A module-level exported constant (non-function, non-class). */
+export interface ParsedConstant {
+  name: string;
+  type: string;
+  description?: string;
+}
+
 export interface ParsedModule {
   filePath: string;
   /** Relative path used as identifier */
@@ -58,6 +67,8 @@ export interface ParsedModule {
   functions: ParsedFunction[];
   types: ParsedType[];
   classes: ParsedClass[];
+  /** Non-function, non-class exported constants (e.g. singleton instances) */
+  constants: ParsedConstant[];
   /** SHA-256 hash of file contents — used for drift detection */
   contentHash: string;
 }
