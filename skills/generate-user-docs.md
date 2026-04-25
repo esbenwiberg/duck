@@ -75,9 +75,13 @@ Write the approved draft to `{docs.specs_dir}{feature}/user-facing.md`.
 1. Ensure the clone of `{docs.repo}` from step 1 has completed (or `git pull` if the
    directory already existed).
 2. Write the draft to `features/{feature}.mdx` inside the docs repo.
-3. Open `docs.json` in the docs repo. If it does not exist, create it with an empty
-   `features` group. Add an entry for the new page under `features`. Do not reorder
-   existing entries.
+3. Look for the navigation config file in the docs repo root. Check for `mint.json`
+   first (Mintlify standard), then `docs.json` (other platforms). If neither exists,
+   create `mint.json` and warn the user:
+   > Neither `mint.json` nor `docs.json` found — created `mint.json`. Verify this is
+   > correct for your docs platform before pushing.
+   Add an entry for the new page under the `navigation` group that best fits
+   (typically a group named `Features` or similar). Do not reorder existing entries.
 4. Stage both files, commit with the message:
    `docs: add user-facing docs for {feature}`
 5. Push the commit to the main branch of the docs repo.

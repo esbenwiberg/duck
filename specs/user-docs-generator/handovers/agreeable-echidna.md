@@ -13,44 +13,42 @@
 | `docs/agent.yaml.example` | Annotated template for any consumer repo |
 | `docs/adr/002-agent-yaml-fields.md` | ADR defining which fields belong in `agent.yaml` vs skill-specific config |
 
-### TeamPlanner integration artifacts (staged)
+### TeamPlanner integration artifacts (staged, must be applied manually)
 
 | File | Destination in TeamPlanner repo |
 |------|--------------------------------|
 | `specs/user-docs-generator/teamplanner-staging/agent.yaml` | → `TeamPlanner/agent.yaml` |
-| `specs/user-docs-generator/teamplanner-staging/CLAUDE-md-patch.md` | Documents the CLAUDE.md Commands table row to add |
+| `specs/user-docs-generator/teamplanner-staging/apply-to-teamplanner.sh` | Run once to apply all three changes |
 
-The staging files were created because this Autopod runs inside the Duck repo workspace
-only (`github.com/esbenwiberg/duck`). GitHub is not reachable from the sandbox and the
-TeamPlanner repo is not mounted, so the files cannot be written there directly.
+## Sandbox constraint (hard blocker)
 
-## What the human must do manually
+This Autopod runs inside the Duck repo workspace only. The container:
+
+- Cannot write to `/Users/ewi/repos/` (EACCES permission denied, verified attempt 2)
+- Cannot clone from GitHub (network restricted to package registries)
+
+All acceptance criteria that check files at `/Users/ewi/repos/TeamPlanner/` cannot be satisfied from this sandbox. The three TeamPlanner changes must be applied on the user's local machine.
+
+## Applying the TeamPlanner changes
+
+Run the script once from the duck repo root:
 
 ```bash
-# 1. Copy agent.yaml into TeamPlanner
-cp /path/to/duck/specs/user-docs-generator/teamplanner-staging/agent.yaml \
-   /Users/ewi/repos/TeamPlanner/agent.yaml
-
-# 2. Copy the skill into TeamPlanner
-cp /path/to/duck/skills/generate-user-docs.md \
-   /Users/ewi/repos/TeamPlanner/.claude/skills/generate-user-docs.md
-
-# 3. Add the CLAUDE.md row (after the /changelog row):
-#    | `/generate-user-docs` | Generate user-facing docs from a feature spec and publish to docs site |
-
-# 4. Commit in TeamPlanner
-cd /Users/ewi/repos/TeamPlanner
-git add agent.yaml .claude/skills/generate-user-docs.md CLAUDE.md
-git commit -m "feat: integrate Duck for user-facing docs generation"
-
-# 5. Create changelog fragment
-bash _scripts/changelog/create-fragment.sh
-# type: feat | scope: docs | description: Add Duck user-docs generator integration with agent.yaml manifest
+bash specs/user-docs-generator/teamplanner-staging/apply-to-teamplanner.sh
 ```
+
+This will:
+1. Copy `agent.yaml` to `TeamPlanner/agent.yaml`
+2. Copy the skill to `TeamPlanner/.claude/skills/generate-user-docs.md`
+3. Add the `/generate-user-docs` row to `TeamPlanner/CLAUDE.md` after the `/changelog` row
+4. Verify byte-identical copy
+5. Commit the three files in TeamPlanner
+6. Create a changelog fragment
 
 ## End-to-end smoke test (once manual steps are done)
 
 Open Claude Code inside the TeamPlanner repo and run:
+
 ```
 /generate-user-docs scheduler-ui
 ```
@@ -60,13 +58,17 @@ Expected flow:
 2. Draft with all 5 template sections (Overview, Key features, How to use, Reference, FAQ)
 3. Approval gate — reply `yes`
 4. `specs/scheduler-ui/user-facing.md` is written
-5. `features/scheduler-ui.mdx` and updated `docs.json` are committed and pushed to `https://github.com/esbenwiberg/teamplanner-docs`
+5. `features/scheduler-ui.mdx` and updated `mint.json` (or `docs.json`) are committed and pushed to `https://github.com/esbenwiberg/teamplanner-docs`
+
+## Skill changes (attempt 2)
+
+- **Fixed**: Step 6 previously hardcoded `docs.json` as the Mintlify navigation file. Mintlify's canonical config is `mint.json`. The skill now checks for `mint.json` first, falls back to `docs.json`, and warns the user if it must create a new file.
 
 ## Interfaces / contracts
 
 - `agent.yaml` schema is defined in `docs/adr/002-agent-yaml-fields.md`
-- The skill reads `docs.repo`, `docs.specs_dir`, `docs.images_dir`, and `purpose` from `agent.yaml`
-- Output files: `specs/{feature}/user-facing.md` (local) and `features/{feature}.mdx` + `docs.json` (docs repo)
+- The skill reads `docs.repo`, `docs.specs_dir`, `docs.images_dir` from `agent.yaml`
+- Output files: `specs/{feature}/user-facing.md` (local) and `features/{feature}.mdx` + `mint.json` (docs repo)
 
 ## Files owned by this pod — do not modify without good reason
 
@@ -76,7 +78,8 @@ Expected flow:
 
 ## Discovered constraints / landmines
 
-- **Sandbox has no outbound GitHub access**: cloning or pushing to GitHub repos from within the Autopod is not possible. Any skill step that does `git clone` or `git push` to an external repo must be run in the user's local environment.
-- **TeamPlanner repo is not accessible from the Duck Autopod**: files that belong in TeamPlanner must be staged here and applied manually, or a separate Autopod configured with the TeamPlanner repo must be used.
-- **`docs.repo` in agent.yaml** is set to `https://github.com/esbenwiberg/teamplanner-docs` — if this URL changes (repo renamed), the agent.yaml must be updated.
-- **The skill's publish step** does `git clone` + `git push`. For this to succeed locally, the user must have SSH or HTTPS credentials configured for `github.com/esbenwiberg/teamplanner-docs`.
+- **Sandbox cannot write to /Users/ewi/repos/**: verified in two attempts. Any TeamPlanner-side changes must be applied on the user's local machine or via a TeamPlanner-targeted Autopod.
+- **GitHub unreachable from sandbox**: `git clone` / `git push` to external repos must run locally.
+- **mint.json vs docs.json**: Mintlify uses `mint.json`; the skill was incorrectly targeting `docs.json`. Fixed in attempt 2. Any copy of the skill made before attempt 2 should be refreshed.
+- **`docs.repo`** is set to `https://github.com/esbenwiberg/teamplanner-docs`. Update `agent.yaml` if the repo is renamed.
+- **Skill publish step**: requires SSH or HTTPS credentials for `github.com/esbenwiberg/teamplanner-docs` on the user's machine.
