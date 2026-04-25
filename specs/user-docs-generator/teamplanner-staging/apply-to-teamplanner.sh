@@ -18,16 +18,19 @@ diff "$DUCK_DIR/skills/generate-user-docs.md" \
      "$TP_DIR/.claude/skills/generate-user-docs.md" \
   || { echo "ERROR: skill files differ after copy"; exit 1; }
 
+# use python3 to avoid BSD/GNU sed differences on macOS vs Linux
 if ! grep -q "generate-user-docs" "$TP_DIR/CLAUDE.md"; then
-  # BSD (macOS) sed requires an empty string after -i; GNU sed does not
-  if sed --version 2>/dev/null | grep -q GNU; then
-    sed -i '/`\/changelog`/a | `\/generate-user-docs` | Generate user-facing docs from a feature spec and publish to docs site |' \
-      "$TP_DIR/CLAUDE.md"
-  else
-    sed -i '' '/`\/changelog`/a\\
-| \`\/generate-user-docs\` | Generate user-facing docs from a feature spec and publish to docs site |' \
-      "$TP_DIR/CLAUDE.md"
-  fi
+  python3 - "$TP_DIR/CLAUDE.md" <<'PYEOF'
+import re, sys
+path = sys.argv[1]
+txt = open(path).read()
+row = '| `/generate-user-docs` | Generate user-facing docs from a feature spec and publish to docs site |'
+patched = re.sub(r'(\|[^\n]*/changelog[^\n]*\n)', r'\1' + row + '\n', txt, count=1)
+if patched == txt:
+    sys.exit("ERROR: /changelog row not found in CLAUDE.md — add the row manually after the /changelog entry")
+open(path, 'w').write(patched)
+print(f"Patched {path}")
+PYEOF
 fi
 
 cd "$TP_DIR"
@@ -42,7 +45,7 @@ EOF
 then
   echo "Changelog fragment created."
 else
-  echo "WARNING: create-fragment.sh exited non-zero (non-TTY?). Create fragment manually:" >&2
+  echo "WARNING: create-fragment.sh failed (non-TTY?). Create fragment manually:" >&2
   echo "  cd $TP_DIR && bash _scripts/changelog/create-fragment.sh" >&2
 fi
 

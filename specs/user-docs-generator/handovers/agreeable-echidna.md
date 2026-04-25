@@ -24,14 +24,14 @@
 
 This Autopod runs inside the Duck repo workspace only. The container:
 
-- Cannot write to `/Users/ewi/repos/` (EACCES permission denied, verified attempt 2)
+- Cannot write to `/Users/ewi/repos/` (permission denied — root-owned, no sudo)
 - Cannot clone from GitHub (network restricted to package registries)
 
 All acceptance criteria that check files at `/Users/ewi/repos/TeamPlanner/` cannot be satisfied from this sandbox. The three TeamPlanner changes must be applied on the user's local machine.
 
 ## Applying the TeamPlanner changes
 
-Run the script once from the duck repo root:
+Pull the duck repo on your Mac, then run:
 
 ```bash
 bash specs/user-docs-generator/teamplanner-staging/apply-to-teamplanner.sh
@@ -40,8 +40,8 @@ bash specs/user-docs-generator/teamplanner-staging/apply-to-teamplanner.sh
 This will:
 1. Copy `agent.yaml` to `TeamPlanner/agent.yaml`
 2. Copy the skill to `TeamPlanner/.claude/skills/generate-user-docs.md`
-3. Add the `/generate-user-docs` row to `TeamPlanner/CLAUDE.md` after the `/changelog` row
-4. Verify byte-identical copy
+3. Add the `/generate-user-docs` row to `TeamPlanner/CLAUDE.md` after the `/changelog` row (via python3 — no sed portability issues)
+4. Verify byte-identical copy with `diff`
 5. Commit the three files in TeamPlanner
 6. Create a changelog fragment
 
@@ -58,17 +58,22 @@ Expected flow:
 2. Draft with all 5 template sections (Overview, Key features, How to use, Reference, FAQ)
 3. Approval gate — reply `yes`
 4. `specs/scheduler-ui/user-facing.md` is written
-5. `features/scheduler-ui.mdx` and updated `mint.json` (or `docs.json`) are committed and pushed to `https://github.com/esbenwiberg/teamplanner-docs`
+5. `features/scheduler-ui.mdx` and updated `mint.json` (or `docs.json`) committed and pushed to `https://github.com/esbenwiberg/teamplanner-docs`
 
-## Skill changes (attempt 2)
+## Bugs fixed across attempts
 
-- **Fixed**: Step 6 previously hardcoded `docs.json` as the Mintlify navigation file. Mintlify's canonical config is `mint.json`. The skill now checks for `mint.json` first, falls back to `docs.json`, and warns the user if it must create a new file.
+| Attempt | Bug | Fix |
+|---------|-----|-----|
+| 2 | Step 6 hardcoded `docs.json`; Mintlify uses `mint.json` | Skill now checks `mint.json` first, falls back to `docs.json` |
+| 3 | `DUCK_DIR` resolved 4 levels up instead of 3, targeting wrong directory | Fixed to `../../..` |
+| 3 | `create-fragment.sh` failure with `set -e` caused silent abort after commit | Wrapped in `if/then/else` with warning |
+| 4 | BSD/macOS `sed -i '' '/pattern/a\\'` with double-backslash prepends a literal `\` to the appended row | Replaced sed with `python3 re.sub` — portable on macOS and Linux |
 
 ## Interfaces / contracts
 
-- `agent.yaml` schema is defined in `docs/adr/002-agent-yaml-fields.md`
-- The skill reads `docs.repo`, `docs.specs_dir`, `docs.images_dir` from `agent.yaml`
-- Output files: `specs/{feature}/user-facing.md` (local) and `features/{feature}.mdx` + `mint.json` (docs repo)
+- `agent.yaml` schema: `docs/adr/002-agent-yaml-fields.md`
+- Skill reads: `docs.repo`, `docs.specs_dir`, `docs.images_dir` from `agent.yaml`
+- Output: `specs/{feature}/user-facing.md` (local) and `features/{feature}.mdx` + `mint.json` (docs repo)
 
 ## Files owned by this pod — do not modify without good reason
 
@@ -76,15 +81,10 @@ Expected flow:
 - `docs/agent.yaml.example` — canonical template
 - `docs/adr/002-agent-yaml-fields.md` — ADR governing field scope
 
-## apply-to-teamplanner.sh bugs fixed (attempt 3)
-
-- **HIGH (fixed)**: `DUCK_DIR` used `../../../..` (4 levels) but the script is only 3 levels deep (`specs/user-docs-generator/teamplanner-staging/`). Fixed to `../../..`. The bug caused every `cp` and `diff` call to target a path one directory above the duck repo root.
-- **MEDIUM (fixed)**: `create-fragment.sh` was called inside a heredoc with `set -e` active. If the fragment script detected a non-TTY and exited non-zero, the shell would abort after the `git commit` — leaving the commit in the tree but no fragment. Fixed by wrapping the call in `if/then/else` so a failure emits a clear warning and fallback instructions instead of silently aborting.
-
 ## Discovered constraints / landmines
 
-- **Sandbox cannot write to /Users/ewi/repos/**: verified in two attempts. Any TeamPlanner-side changes must be applied on the user's local machine or via a TeamPlanner-targeted Autopod.
-- **GitHub unreachable from sandbox**: `git clone` / `git push` to external repos must run locally.
-- **mint.json vs docs.json**: Mintlify uses `mint.json`; the skill was incorrectly targeting `docs.json`. Fixed in attempt 2. Any copy of the skill made before attempt 2 should be refreshed.
-- **`docs.repo`** is set to `https://github.com/esbenwiberg/teamplanner-docs`. Update `agent.yaml` if the repo is renamed.
+- **Sandbox cannot write to `/Users/ewi/repos/`**: root-owned, no sudo, verified across all attempts. TeamPlanner-side changes must run on the user's machine.
+- **GitHub unreachable from sandbox**: `git clone`/`git push` must run locally.
+- **`mint.json` vs `docs.json`**: Mintlify uses `mint.json`; skill copies made before attempt 2 should be refreshed.
+- **`docs.repo`**: set to `https://github.com/esbenwiberg/teamplanner-docs` — update `agent.yaml` if the repo is renamed.
 - **Skill publish step**: requires SSH or HTTPS credentials for `github.com/esbenwiberg/teamplanner-docs` on the user's machine.
