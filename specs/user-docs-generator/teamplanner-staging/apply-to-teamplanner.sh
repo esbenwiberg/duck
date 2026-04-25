@@ -23,12 +23,12 @@ if ! grep -q "generate-user-docs" "$TP_DIR/CLAUDE.md"; then
   python3 - "$TP_DIR/CLAUDE.md" <<'PYEOF'
 import re, sys
 path = sys.argv[1]
-txt = open(path).read()
+txt = open(path, encoding='utf-8').read()
 row = '| `/generate-user-docs` | Generate user-facing docs from a feature spec and publish to docs site |'
 patched = re.sub(r'(\|[^\n]*/changelog[^\n]*\n)', r'\1' + row + '\n', txt, count=1)
 if patched == txt:
     sys.exit("ERROR: /changelog row not found in CLAUDE.md — add the row manually after the /changelog entry")
-open(path, 'w').write(patched)
+open(path, 'w', encoding='utf-8').write(patched)
 print(f"Patched {path}")
 PYEOF
 fi

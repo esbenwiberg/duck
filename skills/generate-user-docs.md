@@ -24,9 +24,6 @@ Read `agent.yaml` from the repo root. Extract:
 If `docs.repo` is missing or empty, stop and tell the user:
 > `agent.yaml` is missing `docs.repo`. Add the URL of your docs repository and try again.
 
-Begin cloning `{docs.repo}` into a temporary directory in the background while continuing
-with the steps below.
-
 ### 2. Read the feature spec
 
 If `{docs.specs_dir}{feature}/` does not exist, list all directories under `{docs.specs_dir}`
@@ -72,8 +69,7 @@ Write the approved draft to `{docs.specs_dir}{feature}/user-facing.md`.
 
 ### 6. Publish to docs repo
 
-1. Ensure the clone of `{docs.repo}` from step 1 has completed (or `git pull` if the
-   directory already existed).
+1. Clone `{docs.repo}` into a temporary directory. If you already cloned it earlier in this session, `git pull` to get the latest instead.
 2. Write the draft to `features/{feature}.mdx` inside the docs repo.
 3. Look for the navigation config file in the docs repo root. Check for `mint.json`
    first (Mintlify standard), then `docs.json` (other platforms). If neither exists,

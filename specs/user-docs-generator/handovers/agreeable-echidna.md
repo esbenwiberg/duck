@@ -68,6 +68,8 @@ Expected flow:
 | 3 | `DUCK_DIR` resolved 4 levels up instead of 3, targeting wrong directory | Fixed to `../../..` |
 | 3 | `create-fragment.sh` failure with `set -e` caused silent abort after commit | Wrapped in `if/then/else` with warning |
 | 4 | BSD/macOS `sed -i '' '/pattern/a\\'` with double-backslash prepends a literal `\` to the appended row | Replaced sed with `python3 re.sub` — portable on macOS and Linux |
+| 5 | Python `open(path).read()` uses platform locale encoding — fails on non-UTF-8 systems | Added `encoding='utf-8'` to both read and write calls |
+| 5 | "Begin cloning … in the background" instruction in skill step 1 is non-deterministic — some LLMs ignore it, others honour it inconsistently | Removed background hint; clone is now a synchronous step 6.1 |
 
 ## Interfaces / contracts
 
