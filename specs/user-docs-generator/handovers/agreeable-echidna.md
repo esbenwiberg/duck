@@ -76,6 +76,11 @@ Expected flow:
 - `docs/agent.yaml.example` — canonical template
 - `docs/adr/002-agent-yaml-fields.md` — ADR governing field scope
 
+## apply-to-teamplanner.sh bugs fixed (attempt 3)
+
+- **HIGH (fixed)**: `DUCK_DIR` used `../../../..` (4 levels) but the script is only 3 levels deep (`specs/user-docs-generator/teamplanner-staging/`). Fixed to `../../..`. The bug caused every `cp` and `diff` call to target a path one directory above the duck repo root.
+- **MEDIUM (fixed)**: `create-fragment.sh` was called inside a heredoc with `set -e` active. If the fragment script detected a non-TTY and exited non-zero, the shell would abort after the `git commit` — leaving the commit in the tree but no fragment. Fixed by wrapping the call in `if/then/else` so a failure emits a clear warning and fallback instructions instead of silently aborting.
+
 ## Discovered constraints / landmines
 
 - **Sandbox cannot write to /Users/ewi/repos/**: verified in two attempts. Any TeamPlanner-side changes must be applied on the user's local machine or via a TeamPlanner-targeted Autopod.

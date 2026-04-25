@@ -3,7 +3,7 @@
 # Usage: bash apply-to-teamplanner.sh [/path/to/TeamPlanner]
 set -e
 
-DUCK_DIR="$(cd "$(dirname "$0")/../../../.." && pwd)"
+DUCK_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 TP_DIR="${1:-/Users/ewi/repos/TeamPlanner}"
 
 echo "Duck: $DUCK_DIR"
@@ -34,10 +34,16 @@ cd "$TP_DIR"
 git add agent.yaml .claude/skills/generate-user-docs.md CLAUDE.md
 git commit -m "feat: integrate Duck for user-facing docs generation"
 
-bash _scripts/changelog/create-fragment.sh <<EOF
+if bash _scripts/changelog/create-fragment.sh <<EOF
 feat
 docs
 Add Duck user-docs generator integration with agent.yaml manifest
 EOF
+then
+  echo "Changelog fragment created."
+else
+  echo "WARNING: create-fragment.sh exited non-zero (non-TTY?). Create fragment manually:" >&2
+  echo "  cd $TP_DIR && bash _scripts/changelog/create-fragment.sh" >&2
+fi
 
 echo "Done. Review with: git -C $TP_DIR show --stat"
