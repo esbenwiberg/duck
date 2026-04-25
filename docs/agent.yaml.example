@@ -1,0 +1,30 @@
+# Duck agent manifest — copy to your repo root as agent.yaml and fill in each field.
+#
+# purpose      One sentence describing what your application does for end users.
+# description  3–5 sentences for anyone reading the docs site. No implementation details.
+# startup      How to start the application locally.
+# validation   A URL and expected HTTP status that confirms the app is running.
+# docs         Where specs and images live, and which repo receives published docs.
+
+purpose: Replace this with one sentence describing what your app does for end users.
+
+description: |
+  Replace this paragraph with 3–5 sentences that describe your application for
+  someone reading the documentation site. Explain what users can do and why it
+  matters — not how it is built.
+
+startup:
+  command: your-start-command-here
+  notes: |
+    Describe which ports the app uses and how long it takes to be ready.
+    Example: starts frontend at http://localhost:3000 and API at http://localhost:4000,
+    allow ~30s for warm-up.
+
+validation:
+  url: http://localhost:PORT/health   # replace PORT with your app's port (e.g. 3000)
+  expected_status: 200
+
+docs:
+  repo: https://github.com/your-org/your-docs-repo
+  specs_dir: specs/
+  images_dir: images/

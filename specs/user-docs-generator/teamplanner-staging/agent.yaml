@@ -1,0 +1,23 @@
+purpose: TeamPlanner helps teams visualise and manage work schedules, capacity, and assignments across projects.
+
+description: |
+  TeamPlanner is a web-based tool for managing team capacity and scheduling.
+  It gives managers and team leads a clear view of who is working on what and when,
+  across multiple projects and time horizons.
+  Teams use it to balance workloads, spot scheduling conflicts early, and keep
+  stakeholders informed about bandwidth and priorities.
+
+startup:
+  command: bash _scripts/start-fast-agent-mode.sh
+  notes: |
+    Starts frontend at http://localhost:3001 and API at http://localhost:5000.
+    Allow ~30s for both services to fully warm up.
+
+validation:
+  url: http://localhost:5000/health
+  expected_status: 200
+
+docs:
+  repo: https://github.com/esbenwiberg/teamplanner-docs
+  specs_dir: specs/
+  images_dir: images/
