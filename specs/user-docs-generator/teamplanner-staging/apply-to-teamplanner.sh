@@ -53,7 +53,8 @@ fi
 
 # 4. Commit
 cd "$TP_DIR"
-if git diff --quiet HEAD -- agent.yaml .claude/skills/generate-user-docs.md CLAUDE.md 2>/dev/null; then
+_status="$(git status --porcelain -- agent.yaml .claude/skills/generate-user-docs.md CLAUDE.md)"
+if [[ -z "$_status" ]]; then
   echo "Nothing to commit — files already match HEAD"
 else
   git add agent.yaml .claude/skills/generate-user-docs.md CLAUDE.md

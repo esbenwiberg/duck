@@ -34,7 +34,7 @@ This script will:
 2. Copy the skill to `TeamPlanner/.claude/skills/generate-user-docs.md`
 3. Verify the skill copy is byte-identical with `cmp -s`
 4. Insert the `/generate-user-docs` row into `TeamPlanner/CLAUDE.md` after the `/changelog` row
-5. Check git diff before staging — skips commit if files already match HEAD
+5. Check `git status --porcelain` before staging — skips commit if files already match HEAD (catches untracked files too)
 6. Commit the three files in TeamPlanner
 7. Attempt to create a changelog fragment (best-effort; may need a TTY)
 
@@ -87,7 +87,7 @@ Expected flow:
 
 | Pod | Fix |
 |-----|-----|
-| agreeable-echidna (this) | Inline redundant `SCRIPT_DIR`; use `cmp -s` for byte-identical check; check `git diff HEAD` before staging to skip unnecessary `git add`; drop `2>/dev/null` that hid real errors; `echo` → `echo` (no empty string) |
+| agreeable-echidna (this) | Inline redundant `SCRIPT_DIR`; use `cmp -s` for byte-identical check; idempotency check now uses `git status --porcelain` (replaces `git diff HEAD` which silently ignored untracked files); drop `2>/dev/null` that hid real errors |
 | Previous pod | `sed` → `python3` for CLAUDE.md patch; removed background clone hint from skill |
 
 ## Bugs fixed in skill across all attempts
