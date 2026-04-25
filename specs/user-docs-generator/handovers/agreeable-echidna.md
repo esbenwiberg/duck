@@ -12,40 +12,63 @@
 | `skills/generate-user-docs.md` | Claude Code skill — invoked with `/generate-user-docs <feature>` |
 | `docs/agent.yaml.example` | Annotated template for any consumer repo |
 | `docs/adr/002-agent-yaml-fields.md` | ADR defining which fields belong in `agent.yaml` vs skill-specific config |
+| `specs/user-docs-generator/teamplanner-staging/agent.yaml` | Ready-to-copy `agent.yaml` for TeamPlanner |
+| `specs/user-docs-generator/teamplanner-staging/apply-to-teamplanner.sh` | Run once on the Mac to apply all three TeamPlanner changes |
 
-### TeamPlanner integration artifacts (staged, must be applied manually)
+## Hard sandbox constraint
 
-| File | Destination in TeamPlanner repo |
-|------|--------------------------------|
-| `specs/user-docs-generator/teamplanner-staging/agent.yaml` | → `TeamPlanner/agent.yaml` |
-| `specs/user-docs-generator/teamplanner-staging/apply-to-teamplanner.sh` | Run once to apply all three changes |
+This Autopod runs inside the Duck repo workspace only. The container cannot write to `/Users/ewi/repos/` (root-owned, no sudo, no GitHub network access to clone TeamPlanner).
 
-## Sandbox constraint (hard blocker)
+**All acceptance criteria that check `/Users/ewi/repos/TeamPlanner/` must be satisfied by the human running the apply script on their Mac.** This is not a fixable blocker — it is a structural constraint of the pod environment.
 
-This Autopod runs inside the Duck repo workspace only. The container:
+## Applying the TeamPlanner changes (human action required)
 
-- Cannot write to `/Users/ewi/repos/` (permission denied — root-owned, no sudo)
-- Cannot clone from GitHub (network restricted to package registries)
-
-All acceptance criteria that check files at `/Users/ewi/repos/TeamPlanner/` cannot be satisfied from this sandbox. The three TeamPlanner changes must be applied on the user's local machine.
-
-## Applying the TeamPlanner changes
-
-Pull the duck repo on your Mac, then run:
+Pull the latest duck repo on your Mac, then run:
 
 ```bash
-bash specs/user-docs-generator/teamplanner-staging/apply-to-teamplanner.sh
+bash /Users/ewi/repos/duck/specs/user-docs-generator/teamplanner-staging/apply-to-teamplanner.sh
 ```
 
-This will:
+This script will:
 1. Copy `agent.yaml` to `TeamPlanner/agent.yaml`
 2. Copy the skill to `TeamPlanner/.claude/skills/generate-user-docs.md`
-3. Add the `/generate-user-docs` row to `TeamPlanner/CLAUDE.md` after the `/changelog` row (via python3 — no sed portability issues)
-4. Verify byte-identical copy with `diff`
-5. Commit the three files in TeamPlanner
-6. Create a changelog fragment
+3. Verify the skill copy is byte-identical with `cmp -s`
+4. Insert the `/generate-user-docs` row into `TeamPlanner/CLAUDE.md` after the `/changelog` row
+5. Check git diff before staging — skips commit if files already match HEAD
+6. Commit the three files in TeamPlanner
+7. Attempt to create a changelog fragment (best-effort; may need a TTY)
 
-## End-to-end smoke test (once manual steps are done)
+The script is idempotent: re-running it when files already match HEAD prints "Nothing to commit" and exits cleanly.
+
+## agent.yaml content
+
+```yaml
+purpose: TeamPlanner helps teams visualise and manage work schedules, capacity, and assignments across projects.
+
+description: |
+  TeamPlanner is a web-based tool for managing team capacity and scheduling.
+  It gives managers and team leads a clear view of who is working on what and when,
+  across multiple projects and time horizons.
+  Teams use it to balance workloads, spot scheduling conflicts early, and keep
+  stakeholders informed about bandwidth and priorities.
+
+startup:
+  command: bash _scripts/start-fast-agent-mode.sh
+  notes: |
+    Starts frontend at http://localhost:3001 and API at http://localhost:5000.
+    Allow ~30s for both services to fully warm up.
+
+validation:
+  url: http://localhost:5000/health
+  expected_status: 200
+
+docs:
+  repo: https://github.com/esbenwiberg/teamplanner-docs
+  specs_dir: specs/
+  images_dir: images/
+```
+
+## End-to-end smoke test (after apply script)
 
 Open Claude Code inside the TeamPlanner repo and run:
 
@@ -60,16 +83,23 @@ Expected flow:
 4. `specs/scheduler-ui/user-facing.md` is written
 5. `features/scheduler-ui.mdx` and updated `mint.json` (or `docs.json`) committed and pushed to `https://github.com/esbenwiberg/teamplanner-docs`
 
-## Bugs fixed across attempts
+## Apply script fixes across pods
+
+| Pod | Fix |
+|-----|-----|
+| agreeable-echidna (this) | Inline redundant `SCRIPT_DIR`; use `cmp -s` for byte-identical check; check `git diff HEAD` before staging to skip unnecessary `git add`; drop `2>/dev/null` that hid real errors; `echo` → `echo` (no empty string) |
+| Previous pod | `sed` → `python3` for CLAUDE.md patch; removed background clone hint from skill |
+
+## Bugs fixed in skill across all attempts
 
 | Attempt | Bug | Fix |
 |---------|-----|-----|
 | 2 | Step 6 hardcoded `docs.json`; Mintlify uses `mint.json` | Skill now checks `mint.json` first, falls back to `docs.json` |
-| 3 | `DUCK_DIR` resolved 4 levels up instead of 3, targeting wrong directory | Fixed to `../../..` |
-| 3 | `create-fragment.sh` failure with `set -e` caused silent abort after commit | Wrapped in `if/then/else` with warning |
-| 4 | BSD/macOS `sed -i '' '/pattern/a\\'` with double-backslash prepends a literal `\` to the appended row | Replaced sed with `python3 re.sub` — portable on macOS and Linux |
-| 5 | Python `open(path).read()` uses platform locale encoding — fails on non-UTF-8 systems | Added `encoding='utf-8'` to both read and write calls |
-| 5 | "Begin cloning … in the background" instruction in skill step 1 is non-deterministic — some LLMs ignore it, others honour it inconsistently | Removed background hint; clone is now a synchronous step 6.1 |
+| 3 | `DUCK_DIR` resolved 4 levels up instead of 3 | Fixed to `../../..` |
+| 3 | `create-fragment.sh` failure with `set -e` caused silent abort | Wrapped in `if/then/else` |
+| 4 | BSD `sed -i ''` prepended literal `\` to appended row | Replaced with `python3 re.sub` |
+| 5 | `open(path).read()` used platform locale encoding | Added `encoding='utf-8'` |
+| 5 | Background clone hint was non-deterministic | Clone is now synchronous |
 
 ## Interfaces / contracts
 
@@ -82,11 +112,13 @@ Expected flow:
 - `skills/generate-user-docs.md` — source of truth; TeamPlanner carries a copy
 - `docs/agent.yaml.example` — canonical template
 - `docs/adr/002-agent-yaml-fields.md` — ADR governing field scope
+- `specs/user-docs-generator/teamplanner-staging/` — all three staging files
 
 ## Discovered constraints / landmines
 
-- **Sandbox cannot write to `/Users/ewi/repos/`**: root-owned, no sudo, verified across all attempts. TeamPlanner-side changes must run on the user's machine.
+- **Sandbox cannot write to `/Users/ewi/repos/`**: root-owned, no sudo. TeamPlanner-side changes must run on the user's machine.
 - **GitHub unreachable from sandbox**: `git clone`/`git push` must run locally.
-- **`mint.json` vs `docs.json`**: Mintlify uses `mint.json`; skill copies made before attempt 2 should be refreshed.
-- **`docs.repo`**: set to `https://github.com/esbenwiberg/teamplanner-docs` — update `agent.yaml` if the repo is renamed.
+- **`mint.json` vs `docs.json`**: Mintlify uses `mint.json`; the skill checks `mint.json` first.
+- **`docs.repo`**: `https://github.com/esbenwiberg/teamplanner-docs` — update `agent.yaml` if the repo is renamed.
 - **Skill publish step**: requires SSH or HTTPS credentials for `github.com/esbenwiberg/teamplanner-docs` on the user's machine.
+- **`create-fragment.sh` may need a TTY**: the apply script passes input via `printf |` pipe, which may not satisfy an interactive prompt. If it fails, run `bash _scripts/changelog/create-fragment.sh` manually in TeamPlanner.
