@@ -23,12 +23,7 @@ echo "Copied agent.yaml"
 # 2. Copy skill
 mkdir -p "$TP_DIR/.claude/skills"
 cp "$DUCK_DIR/skills/generate-user-docs.md" "$TP_DIR/.claude/skills/generate-user-docs.md"
-if cmp -s "$DUCK_DIR/skills/generate-user-docs.md" "$TP_DIR/.claude/skills/generate-user-docs.md"; then
-  echo "Skill copy verified byte-identical"
-else
-  echo "ERROR: skill files differ after copy" >&2
-  exit 1
-fi
+echo "Copied skill"
 
 # 3. Patch CLAUDE.md — insert /generate-user-docs row after /changelog row
 if grep -q "generate-user-docs" "$TP_DIR/CLAUDE.md"; then
@@ -53,11 +48,12 @@ fi
 
 # 4. Commit
 cd "$TP_DIR"
-_status="$(git status --porcelain -- agent.yaml .claude/skills/generate-user-docs.md CLAUDE.md)"
+_files=(agent.yaml .claude/skills/generate-user-docs.md CLAUDE.md)
+_status="$(git status --porcelain -- "${_files[@]}")"
 if [[ -z "$_status" ]]; then
   echo "Nothing to commit — files already match HEAD"
 else
-  git add agent.yaml .claude/skills/generate-user-docs.md CLAUDE.md
+  git add "${_files[@]}"
   git commit -m "feat: integrate Duck for user-facing docs generation"
   echo "Committed to TeamPlanner"
 fi

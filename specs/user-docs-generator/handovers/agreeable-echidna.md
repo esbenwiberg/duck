@@ -87,7 +87,7 @@ Expected flow:
 
 | Pod | Fix |
 |-----|-----|
-| agreeable-echidna (this) | Inline redundant `SCRIPT_DIR`; use `cmp -s` for byte-identical check; idempotency check now uses `git status --porcelain` (replaces `git diff HEAD` which silently ignored untracked files); drop `2>/dev/null` that hid real errors |
+| agreeable-echidna (this) | Inline redundant `SCRIPT_DIR`; idempotency check uses `git status --porcelain` (replaces `git diff HEAD` which silently ignored untracked files); drop `2>/dev/null` that hid real errors; simplify: remove redundant `cmp -s` after `cp` (trust `set -e`); use array for file list to avoid repeating paths |
 | Previous pod | `sed` → `python3` for CLAUDE.md patch; removed background clone hint from skill |
 
 ## Bugs fixed in skill across all attempts
