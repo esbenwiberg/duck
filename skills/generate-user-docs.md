@@ -76,8 +76,9 @@ Write the approved draft to `{docs.specs_dir}{feature}/user-facing.md`.
    create `mint.json` and warn the user:
    > Neither `mint.json` nor `docs.json` found — created `mint.json`. Verify this is
    > correct for your docs platform before pushing.
-   Add an entry for the new page under the `navigation` group that best fits
-   (typically a group named `Features` or similar). Do not reorder existing entries.
+   Add `features/{feature}` to the `pages` array inside the group named `Features`.
+   If no `Features` group exists, append one at the end of the `navigation` array.
+   Do not reorder existing entries.
 4. Stage both files, commit with the message:
    `docs: add user-facing docs for {feature}`
 5. Push the commit to the main branch of the docs repo.

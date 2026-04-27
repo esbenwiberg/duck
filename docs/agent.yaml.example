@@ -25,6 +25,6 @@ validation:
   expected_status: 200
 
 docs:
-  repo: https://github.com/your-org/your-docs-repo
+  repo: https://github.com/your-org/your-docs-repo   # create this empty repo on GitHub first, then run /init-docs-repo
   specs_dir: specs/
   images_dir: images/
