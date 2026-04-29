@@ -5,11 +5,14 @@ Generate user-facing documentation from a feature spec and publish it to the doc
 ## Usage
 
 ```
-/generate-user-docs <feature>
+/generate-user-docs <feature> [--local [folder]]
 ```
 
 `<feature>` is the name of a subdirectory under `docs.specs_dir` in `agent.yaml`
 (e.g. `scheduler-ui`).
+
+`--local` saves the output inside this repository instead of publishing to `docs.repo`.
+`folder` is the subdirectory to write into (default: `userdocs`).
 
 ## Steps
 
@@ -25,8 +28,8 @@ Read `agent.yaml` from the repo root. Extract:
 - `validation.url` — URL to confirm the app is running (optional)
 - `validation.expected_status` — expected HTTP status code (optional, default: 200)
 
-If `docs.repo` is missing or empty, stop and tell the user:
-> `agent.yaml` is missing `docs.repo`. Add the URL of your docs repository and try again.
+If `--local` is **not** passed and `docs.repo` is missing or empty, stop and tell the user:
+> `agent.yaml` is missing `docs.repo`. Add the URL of your docs repository, or pass `--local` to save output locally.
 
 ### 2. Read the feature spec
 
@@ -192,7 +195,8 @@ omit the image tags.
 
 Show the full draft to the user. Then ask:
 
-> Does this look good? Reply `yes` to publish, or give feedback to revise.
+- If `--local` is active: "Does this look good? Reply `yes` to save locally, or give feedback to revise."
+- Otherwise: "Does this look good? Reply `yes` to publish, or give feedback to revise."
 
 Wait for a response. If the user says `yes`, proceed to step 7. Otherwise incorporate
 the feedback, show the revised draft, and ask again.
@@ -202,6 +206,16 @@ the feedback, show the revised draft, and ask again.
 Write the approved draft to `{docs.specs_dir}{feature}/user-facing.md`.
 
 ### 8. Publish to docs repo
+
+**If `--local` was passed:**
+
+1. Determine the target folder: use the value given after `--local`, or `userdocs` if none was provided.
+2. Write the approved draft to `{folder}/{feature}.mdx` inside the current repository.
+3. If screenshots were captured in step 4, they are already saved to `{docs.images_dir}{feature}/` and can be referenced as-is — no copy needed.
+4. Confirm to the user:
+   > Draft saved to `{folder}/{feature}.mdx`. No remote publish was performed.
+
+**Otherwise (remote publish):**
 
 1. Clone `{docs.repo}` into a temporary directory. If you already cloned it earlier in this session, `git pull` to get the latest instead.
 2. Write the draft to `features/{feature}.mdx` inside the docs repo.
